@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libpq-dev \
     libzip-dev \
+    librabbitmq-dev \
+    libssh-dev \
+    && pecl install amqp \
+    && docker-php-ext-enable amqp \
     && docker-php-ext-install pdo_mysql pdo_pgsql zip
 
 # Install Composer
@@ -19,9 +23,7 @@ COPY . .
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
 # Install Symfony dependencies
-RUN composer install --no-dev --optimize-autoloader
-
-RUN composer require symfony/maker-bundle --dev
+RUN composer install --optimize-autoloader
 
 # Expose port
 EXPOSE 9000
