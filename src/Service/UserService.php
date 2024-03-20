@@ -19,6 +19,7 @@ class UserService
     public function createUser($request)
     {
         $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+        dd($user);
         $errors = self::validate($user);
 
         if (count($errors) > 0) {
@@ -41,9 +42,8 @@ class UserService
             foreach ($violations as $error) {
                 $errorMessages[] = $error->getMessage();
             }
-
-            //return new JsonResponse(['errors' => $errorMessages], JsonResponse::HTTP_BAD_REQUEST);
-            return $errorMessages;
         }
+
+        return $errorMessages;
     }
 }
