@@ -4,7 +4,9 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Message\UserCreated;
+use App\Service\UserService;
 use Doctrine\ORM\EntityManagerInterface;
+use Exception;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
@@ -15,6 +17,10 @@ use Symfony\Component\Messenger\MessageBusInterface;
 
 class UserController extends AbstractController
 {
+    public function __construct(protected UserService $userService)
+    {
+    }
+    
     #[Route('/users', name: 'app_user', methods: ['GET'])]
     public function index(): JsonResponse
     {
@@ -27,36 +33,18 @@ class UserController extends AbstractController
     #[Route('/users', name: 'create_user', methods: ['POST'])]
     public function store(Request $request, EntityManagerInterface $entityManager, ValidatorInterface $validator, SerializerInterface $serializer, MessageBusInterface $messageBus): JsonResponse
     {
-        // $jsonData = json_decode($request->getContent(), true);
-        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+        try {
+            $this->userService->createUser($request);
 
-        // $user = new User();
-        // $user->setEmail($jsonData['email']);
-        // $user->setFirstName($jsonData['firstName']);
-        // $user->setLastName($jsonData['lastName']);
-
-        $errors = $validator->validate($user);
-
-        if (count($errors) > 0) {
-            // Handle validation errors
-            $errorMessages = [];
-            foreach ($errors as $error) {
-                $errorMessages[] = $error->getMessage();
-            }
-
-            return new JsonResponse(['errors' => $errorMessages], JsonResponse::HTTP_BAD_REQUEST);
+            $jsonData = json_decode($request->getContent(), true);
+            $messageBus->dispatch(
+                message: new UserCreated($jsonData)
+            );
+        } catch (Exception $e) {
+            return $this->json([
+                'message' => "Failed to create user! " . $e->getMessage(),
+            ], 500);
         }
-
-        // tell Doctrine you want to (eventually) save the Product (no queries yet)
-        $entityManager->persist($user);
-
-        // actually executes the queries (i.e. the INSERT query)
-        $entityManager->flush();
-
-        $jsonData = json_decode($request->getContent(), true);
-        $messageBus->dispatch(
-            message: new UserCreated($jsonData)
-        );
 
         // return new Response('Saved new product with id '.$product->getId());
         return $this->json([
