@@ -19,7 +19,6 @@ class UserService
     public function createUser($request)
     {
         $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
-        dd($user);
         $errors = self::validate($user);
 
         if (count($errors) > 0) {
